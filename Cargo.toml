@@ -1,0 +1,8 @@
+[package]
+name = "aula-cli"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "CLI Linux para teclados AULA F Series, baseado em engenharia reversa"
+
+[dependencies]
