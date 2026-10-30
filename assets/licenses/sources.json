@@ -1,0 +1,30 @@
+[
+  {
+    "file": "assets/licenses/egui/LICENSE-MIT",
+    "source": "https://github.com/emilk/egui/blob/49682f8baa058bf49e011035cfbd6e825f88a5ef/LICENSE-MIT"
+  },
+  {
+    "file": "assets/licenses/egui/LICENSE-APACHE",
+    "source": "https://github.com/emilk/egui/blob/49682f8baa058bf49e011035cfbd6e825f88a5ef/LICENSE-APACHE"
+  },
+  {
+    "file": "assets/licenses/accesskit/LICENSE-MIT",
+    "source": "https://github.com/AccessKit/accesskit/blob/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/LICENSE-MIT"
+  },
+  {
+    "file": "assets/licenses/accesskit/LICENSE-APACHE",
+    "source": "https://github.com/AccessKit/accesskit/blob/a55d3e1a18bb9ef0e4bccc9083fb13c3e0ad8969/LICENSE-APACHE"
+  },
+  {
+    "file": "assets/licenses/gl-rs/LICENSE",
+    "source": "https://github.com/brendanzab/gl-rs/blob/ea503e8d5fb6d73c6030e6191ce738cd3bf3433e/LICENSE"
+  },
+  {
+    "file": "assets/licenses/profiling/LICENSE-MIT",
+    "source": "https://github.com/aclysma/profiling/blob/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-MIT"
+  },
+  {
+    "file": "assets/licenses/profiling/LICENSE-APACHE",
+    "source": "https://github.com/aclysma/profiling/blob/8271551172eb6fa4cba47369aedd93790c623df9/LICENSE-APACHE"
+  }
+]
