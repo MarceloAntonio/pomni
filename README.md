@@ -16,7 +16,8 @@ respectivos titulares.
 - Histórico das oito últimas cores usadas, salvo entre sessões.
 - Exibição do modelo, conexão e bateria, quando disponível.
 - Prévia de teclado brasileiro ABNT2, com Ç, AltGr e Enter em duas linhas.
-- Interface para Wayland e X11, com comunicação em segundo plano.
+- Interface minimalista com vidro translúcido, bordas suaves e suporte ao blur
+  do compositor em Wayland/X11, com comunicação em segundo plano.
 
 ## Compatibilidade
 
@@ -122,6 +123,17 @@ cargo build --release --locked --features gui --bins
 ./target/release/pomni-gui
 ```
 
+Para adicionar a GUI ao menu de aplicativos do seu usuário, com o ícone do Pomni:
+
+```sh
+./scripts/install-desktop.sh
+```
+
+No Hyprland, a transparência da janela usa o blur já configurado no compositor.
+O aplicativo não modifica as regras do seu desktop. Sem blur, a janela continua
+translúcida. A fonte da interface usa SF Pro Display/Inter quando instalada, com
+fallback para a fonte padrão.
+
 Para compilar somente o CLI:
 
 ```sh
@@ -136,7 +148,15 @@ cargo clippy --locked --features gui --all-targets -- -D warnings
 cargo test --locked --features gui
 ```
 
-As notas técnicas do protocolo e da validação estão em [docs](docs/).
+Para gerar o pacote de release, compile os dois executáveis, faça commit das
+alterações e execute:
+
+```sh
+./scripts/package-release.sh
+```
+
+O empacotador usa Bash, `jq`, `binutils` e as ferramentas usuais do Linux.
+O arquivo compactado, as licenças e o checksum são gerados em `dist/`.
 
 ## Licença
 

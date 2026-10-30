@@ -1,4 +1,4 @@
-//! RGB fields recovered from the shipped OemDrv.exe; see docs/protocol.md.
+//! RGB field editing and per-connection LED layouts for supported keyboards.
 //! These functions only edit buffers. The caller owns HID transactions.
 
 pub const EFFECTS: &[(&str, u8, &str)] = &[
@@ -32,7 +32,8 @@ pub fn effect_name(hw: u8) -> &'static str {
 }
 
 /// The shipped driver's layout and the observed F75 wireless firmware differ.
-/// See docs/brightness-evidence.md for the physical wheel captures.
+/// On the observed F75 wireless, the wheel changes byte 58+2*i rather than
+/// the adjacent high nibble. Regression fixtures preserve both captures.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum LedLayout {
     Driver,

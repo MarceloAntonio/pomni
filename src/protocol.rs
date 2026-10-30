@@ -1,5 +1,5 @@
 //! Descriptor-selected AULA wired feature and wireless report19 protocols.
-//! See docs/wireless-evidence.md for protocol evidence and limitations.
+//! Wired Feature 6/9 and wireless Input/Output report 19 backends.
 use crate::transport::Hidraw;
 use std::time::Instant;
 use std::{io, time::Duration};
