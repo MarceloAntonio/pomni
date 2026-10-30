@@ -1,6 +1,6 @@
 # aula-cli
 
-CLI Rust Linux para AULA F75/F87/F99, com seleção automática da interface HID.
+CLI e interface gráfica nativa em Rust para AULA F75/F87/F99 no Linux, com seleção automática da interface HID.
 
 ```sh
 cd ~/projetos/aula-cli
@@ -28,9 +28,67 @@ ao selecioná-los, prevalece seu comportamento próprio de cores. Combinar
 O brilho recebe percentual ou variação percentual e respeita os níveis do
 modelo (F75:0–9; F87/F99:0–4). Cada incremento não nulo avança ao menos um nível;
 o valor é limitado aos extremos. `--dry-run` consulta e calcula sem gravar.
+No F75 wireless, o campo de brilho foi corrigido por comparação com a rodinha
+do teclado real; veja [a evidência](docs/brightness-evidence.md).
 Antes de gravar, o modelo é confirmado por PSD; as alterações são confirmadas
 por releitura. Uma atualização de paleta e efeito usa duas operações distintas;
 uma falha entre elas pode deixar somente a paleta atualizada.
+
+## Interface gráfica
+
+A interface segue o visual do projeto `k617rgb`: tema escuro, lista de efeitos,
+prévia animada do teclado, seletor de cor e controles de brilho.
+
+```sh
+cd ~/projetos/aula-cli
+cargo run --release --offline --features gui --bin aula-gui
+```
+
+Para compilar e abrir o executável diretamente:
+
+```sh
+cargo build --release --offline --features gui --bins
+./target/release/aula-gui
+```
+
+A compilação offline exige as dependências em cache; na primeira compilação em
+outra máquina, remova `--offline` para baixá-las. A GUI usa OpenGL e suporta
+Wayland e X11. O CLI continua disponível como `aula-cli` e não exige a feature.
+
+- A abertura consulta modelo, conexão, efeito, brilho e bateria disponível.
+  Use **Atualizar conexão** depois de conectar ou trocar o modo do teclado;
+  isso também descarta ajustes pendentes e relê o estado.
+- Escolha o efeito na coluna esquerda. Marque **Alterar cor** e/ou **Alterar
+  brilho** para enviar esses campos; editar um controle também marca o campo.
+  Desmarcados, os campos seguem as mesmas regras de preservação do CLI.
+- **Aplicar ao teclado** é a única ação que grava configurações. A GUI compartilha
+  o backend do CLI, incluindo identificação do modelo e confirmação por releitura.
+  A comunicação roda em uma thread própria para manter a janela responsiva.
+- **Favoritas** contém oito amostras editáveis: clique em **Editar**, escolha a
+  amostra e altere a cor nos mesmos campos do painel, sem abrir outra janela.
+  Use o seletor, hexadecimal ou campos RGB (0–255) e finalize com
+  **Concluir**. Nas favoritas e em **Alterar cor**, o toggle **HEX / RGB**
+  exibe somente os campos do formato escolhido; os dois começam em **HEX**.
+  Trocar o formato preserva a cor selecionada. O botão direito em uma amostra também
+  permite substituí-la pela cor selecionada. **Resetar** restaura as oito
+  favoritas padrão e preserva o histórico. O campo HEX é compacto, com prefixo `#` visível. HEX e RGB mantêm a mesma altura;
+  alternar o formato não redimensiona o painel nem a prévia do teclado.
+- **Últimas usadas** guarda as oito cores distintas mais recentemente
+  aplicadas com confirmação do teclado. Reutilizar uma cor a move para o início;
+  ajustes só de brilho e gravações que falham não acrescentam cores. Clique numa
+  amostra para selecioná-la e depois em **Aplicar ao teclado** para enviá-la.
+  Favoritas e histórico são salvos automaticamente entre sessões da interface.
+- Efeitos com cores internas ocultam a edição de cor; **Desligado** envia apenas
+  o efeito. Não são oferecidos controles por tecla ou velocidade, cujos comandos
+  não estão implementados no CLI.
+- A prévia é ilustrativa, com layouts brasileiros ABNT2 de F75/F87/F99
+  selecionáveis, incluindo Ç, AltGr e Enter em duas linhas. Setas, rodinha e
+  indicador de conexão são desenhados sem depender de símbolos da fonte. A escolha do
+  layout altera apenas o desenho, não o modelo detectado. A cor inicial da prévia
+  é uma amostra, não uma leitura da paleta física do teclado.
+- Bateria indisponível é exibida sem estimativas. Bluetooth pode ser detectado,
+  mas não habilita a configuração RGB. Falhas e instruções de permissão aparecem
+  na janela; as mesmas regras udev do CLI se aplicam.
 
 ## Modos e limitações reais
 
@@ -65,8 +123,7 @@ leitura disponível, mostra `[??????????] indisponível`; nunca estima um valor.
 Uma leitura real aparece como `[███████░░░] 70%`.
 
 Se o teclado não for identificado como modelo conhecido, o CLI retorna erro.
-Não há atualização de firmware, macros, nem interface gráfica nesta versão.
-O projeto gráfico indicado pelo usuário será referência após validação do CLI.
+Não há atualização de firmware nem macros nesta versão.
 
 ## Permissão Linux
 
@@ -83,13 +140,16 @@ Permissão de acesso não adiciona funcionalidades ao firmware.
 
 ## Desenvolvimento
 
-Rust1.88+, sem dependências externas. Módulos: cli (argumentos), device
+CLI: Rust 1.88+, sem dependências externas ativas. Interface gráfica: Rust 1.95+
+e eframe/egui 0.36, habilitados apenas com a feature `gui`. Módulos: cli (argumentos), device
 (detecção/bateria sysfs), transport (HID), protocol (comandos), rgb (campos RGB).
 
 ```sh
 cargo fmt --check
 cargo clippy --offline --all-targets -- -D warnings
 cargo test --offline
+cargo clippy --offline --features gui --all-targets -- -D warnings
+cargo test --offline --features gui
 ```
 
 A engenharia reversa está resumida em `docs/`. Pseudocódigo e desmontagem são

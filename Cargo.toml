@@ -5,4 +5,18 @@ edition = "2024"
 rust-version = "1.88"
 description = "CLI Linux para teclados AULA F Series, baseado em engenharia reversa"
 
+default-run = "aula-cli"
+
 [dependencies]
+eframe = { version = "0.36", optional = true, default-features = false, features = ["glow", "wayland", "x11", "default_fonts", "persistence"] }
+
+[features]
+gui = ["dep:eframe"]
+
+[[bin]]
+name = "aula-gui"
+path = "src/bin/aula-gui.rs"
+required-features = ["gui"]
+
+[profile.release]
+strip = true
