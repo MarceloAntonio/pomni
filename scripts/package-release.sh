@@ -31,9 +31,11 @@ for pomni_source in target/release/pomni target/release/pomni-gui README.md LICE
     cp -p -- "$pomni_source" "$pomni_stage/"
 done
 cp -a -- udev "$pomni_stage/udev"
+mkdir -p -- "$pomni_stage/assets" "$pomni_stage/scripts"
 for pomni_asset in pomni.desktop pomni.svg pomni.png; do
-    cp -p -- "assets/$pomni_asset" "$pomni_stage/"
+    cp -p -- "assets/$pomni_asset" "$pomni_stage/assets/"
 done
+install -m755 -- scripts/install-desktop.sh "$pomni_stage/scripts/install-desktop.sh"
 cat > "$pomni_stage/THIRD_PARTY_NOTICES.md" <<'NOTICES'
 # Third-party software notices
 

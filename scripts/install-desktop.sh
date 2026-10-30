@@ -4,6 +4,10 @@ set -euo pipefail
 
 pomni_root=$(dirname -- "$(dirname -- "$(realpath -- "${BASH_SOURCE[0]}")")")
 pomni_binary="$pomni_root/target/release/pomni-gui"
+# The same installer works in a checkout and in an extracted release package.
+if [[ ! -f "$pomni_binary" && -f "$pomni_root/pomni-gui" ]]; then
+    pomni_binary="$pomni_root/pomni-gui"
+fi
 if [[ ! -f "$pomni_binary" ]]; then
     printf '%s\n' 'Compile primeiro: cargo build --release --locked --features gui --bin pomni-gui' >&2
     exit 1
