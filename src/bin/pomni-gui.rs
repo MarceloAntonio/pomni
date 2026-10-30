@@ -3,6 +3,8 @@
 mod palettes;
 #[path = "pomni-gui/preferences.rs"]
 mod preferences;
+#[path = "pomni-gui/theme.rs"]
+mod theme;
 use palettes::PaletteBook;
 
 use eframe::egui::{self, Color32, RichText, Sense, Stroke, Vec2};
@@ -12,12 +14,12 @@ use std::{
     time::Duration,
 };
 
-const BG: Color32 = Color32::from_rgb(22, 22, 26);
-const PANEL: Color32 = Color32::from_rgb(30, 30, 36);
-const ACCENT: Color32 = Color32::from_rgb(14, 95, 168);
-const MUTED: Color32 = Color32::from_rgb(150, 155, 170);
-const OK: Color32 = Color32::from_rgb(76, 209, 122);
-const ERROR: Color32 = Color32::from_rgb(255, 107, 107);
+const BG: Color32 = Color32::from_rgba_premultiplied(11, 11, 11, 153);
+const PANEL: Color32 = Color32::from_rgba_premultiplied(10, 10, 10, 10);
+const ACCENT: Color32 = Color32::from_rgba_premultiplied(38, 38, 38, 38);
+const MUTED: Color32 = Color32::from_rgb(166, 170, 176);
+const OK: Color32 = Color32::from_rgb(168, 213, 183);
+const ERROR: Color32 = Color32::from_rgb(242, 158, 167);
 const COLOR_SIZE: Vec2 = Vec2::splat(28.0);
 const SWATCHES: [[u8; 3]; 8] = [
     [255, 70, 90],
@@ -161,13 +163,8 @@ struct App {
 
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Self {
-        cc.egui_ctx.set_theme(egui::Theme::Dark);
-        cc.egui_ctx.style_mut_of(egui::Theme::Dark, |s| {
-            s.visuals.panel_fill = BG;
-            s.visuals.selection.bg_fill = ACCENT;
-            s.spacing.item_spacing = Vec2::new(10.0, 10.0);
-            s.spacing.button_padding = Vec2::new(14.0, 8.0);
-        });
+        theme::apply(&cc.egui_ctx);
+        theme::load_desktop_font(&cc.egui_ctx);
         let (tx, rx) = worker(cc.egui_ctx.clone());
         let mut app = Self {
             tx,
@@ -262,11 +259,19 @@ impl App {
                     let fill = if self.effect == i {
                         ACCENT
                     } else if response.hovered() {
-                        Color32::from_gray(42)
+                        Color32::from_white_alpha(20)
                     } else {
                         Color32::TRANSPARENT
                     };
-                    ui.painter().rect_filled(rect, 4.0, fill);
+                    ui.painter().rect_filled(rect, 9.0, fill);
+                    if self.effect == i {
+                        ui.painter().rect_stroke(
+                            rect,
+                            9.0,
+                            Stroke::new(1.0, Color32::from_white_alpha(30)),
+                            egui::StrokeKind::Inside,
+                        );
+                    }
                     ui.painter().text(
                         rect.left_center() + Vec2::new(10.0, 0.0),
                         egui::Align2::LEFT_CENTER,
@@ -515,9 +520,9 @@ impl App {
     fn header(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.label(RichText::new("POMNI").size(32.0).strong());
+                ui.label(RichText::new("Pomni").size(28.0).strong());
                 ui.label(
-                    RichText::new("CONTROLE RGB  /  LINUX")
+                    RichText::new("Iluminação do teclado")
                         .size(11.0)
                         .color(MUTED),
                 );
@@ -598,7 +603,13 @@ impl App {
         painter.rect_filled(
             egui::Rect::from_min_size(origin, Vec2::new(width, height)),
             12.0,
-            Color32::from_rgb(7, 7, 9),
+            Color32::from_white_alpha(7),
+        );
+        painter.rect_stroke(
+            egui::Rect::from_min_size(origin, Vec2::new(width, height)),
+            12.0,
+            Stroke::new(1.0, Color32::from_white_alpha(24)),
+            egui::StrokeKind::Inside,
         );
         let t = ui.input(|i| i.time) as f32;
         let hw = rgb::EFFECTS[self.effect].1;
@@ -617,20 +628,27 @@ impl App {
                         } else {
                             0.8
                         });
-                    let outline = Stroke::new(1.2, color.gamma_multiply(0.8));
+                    let outline = Stroke::new(
+                        1.0,
+                        Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 155),
+                    );
                     if *label == "EnterISO" {
                         // ABNT2 Enter spans two rows, with a quarter-unit notch
                         // on its left side. The next row reserves its stem.
                         let stem_left = rect.left() + scale * 0.25;
                         let bottom = rect.bottom() + scale;
-                        painter.rect_filled(rect, 3.0, color.gamma_multiply(0.12));
+                        painter.rect_filled(
+                            rect,
+                            3.0,
+                            Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 16),
+                        );
                         painter.rect_filled(
                             egui::Rect::from_min_max(
                                 egui::pos2(stem_left, rect.bottom() - 4.0),
                                 egui::pos2(rect.right(), bottom),
                             ),
                             3.0,
-                            color.gamma_multiply(0.12),
+                            Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 16),
                         );
                         painter.add(egui::Shape::closed_line(
                             vec![
@@ -650,7 +668,11 @@ impl App {
                             (scale * 0.25).min(12.0),
                         );
                     } else {
-                        painter.rect_filled(rect, 4.0, color.gamma_multiply(0.12));
+                        painter.rect_filled(
+                            rect,
+                            4.0,
+                            Color32::from_rgba_unmultiplied(color.r(), color.g(), color.b(), 16),
+                        );
                         painter.rect_stroke(rect, 4.0, outline, egui::StrokeKind::Inside);
                         draw_key_legend(painter, rect, label, (scale * 0.25).min(12.0));
                     }
@@ -965,19 +987,46 @@ fn keyboard_rows(model: usize) -> Vec<Vec<(&'static str, f32)>> {
 impl App {
     fn show(&mut self, ui: &mut egui::Ui) -> egui::Rect {
         self.receive();
+        // One translucent backdrop; panel overlays must not darken it twice.
+        ui.painter().rect_filled(ui.max_rect(), 0.0, BG);
         egui::Panel::left("effects")
             .exact_size(245.0)
-            .frame(egui::Frame::new().fill(PANEL).inner_margin(14.0))
+            .frame(theme::panel_frame().inner_margin(14.0))
             .show(ui, |ui| self.effects(ui));
+        // Tiling compositors may assign less than the requested minimum size.
+        // Keep the keyboard and every control reachable instead of overlapping.
+        if ui.max_rect().height() < 700.0 {
+            return egui::CentralPanel::default()
+                .frame(
+                    egui::Frame::new()
+                        .fill(Color32::TRANSPARENT)
+                        .inner_margin(18.0),
+                )
+                .show(ui, |ui| {
+                    egui::ScrollArea::vertical()
+                        .id_salt("compact_content")
+                        .auto_shrink([false, false])
+                        .show(ui, |ui| {
+                            self.header(ui);
+                            self.keyboard(ui);
+                            ui.add_space(18.0);
+                            theme::panel_frame()
+                                .inner_margin(16.0)
+                                .show(ui, |ui| self.controls(ui));
+                        });
+                })
+                .response
+                .rect;
+        }
         egui::Panel::bottom("controls")
-            .frame(
-                egui::Frame::new()
-                    .fill(PANEL)
-                    .inner_margin(egui::Margin::symmetric(24, 18)),
-            )
+            .frame(theme::panel_frame().inner_margin(egui::Margin::symmetric(24, 18)))
             .show(ui, |ui| self.controls(ui));
         let content = egui::CentralPanel::default()
-            .frame(egui::Frame::new().fill(BG).inner_margin(24.0))
+            .frame(
+                egui::Frame::new()
+                    .fill(Color32::TRANSPARENT)
+                    .inner_margin(24.0),
+            )
             .show(ui, |ui| {
                 self.header(ui);
                 self.keyboard(ui);
@@ -992,6 +1041,10 @@ impl App {
 }
 
 impl eframe::App for App {
+    fn clear_color(&self, _visuals: &egui::Visuals) -> [f32; 4] {
+        [0.0; 4]
+    }
+
     fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         self.show(ui);
         if self.palette_dirty
@@ -1022,6 +1075,11 @@ fn main() -> eframe::Result {
             viewport: egui::ViewportBuilder::default()
                 .with_title("Pomni")
                 .with_app_id("pomni")
+                .with_transparent(true)
+                .with_icon(
+                    eframe::icon_data::from_png_bytes(include_bytes!("../../assets/pomni.png"))
+                        .expect("ícone PNG do Pomni inválido"),
+                )
                 .with_inner_size([1280.0, 820.0])
                 .with_min_inner_size([1100.0, 760.0]),
             ..Default::default()
@@ -1116,11 +1174,8 @@ mod tests {
             for format in [ColorFormat::Hex, ColorFormat::Rgb] {
                 for history_filled in [false, true] {
                     let ctx = egui::Context::default();
-                    ctx.set_theme(egui::Theme::Dark);
-                    ctx.style_mut_of(egui::Theme::Dark, |s| {
-                        s.spacing.item_spacing = Vec2::new(10.0, 10.0);
-                        s.spacing.button_padding = Vec2::new(14.0, 8.0);
-                    });
+                    theme::apply(&ctx);
+
                     let Harness {
                         mut app,
                         results: _results,
@@ -1164,6 +1219,7 @@ mod tests {
     #[test]
     fn swatches_have_identical_bounds_for_every_color_and_selection() {
         let ctx = egui::Context::default();
+        theme::apply(&ctx);
         let _ = ctx.run_ui(egui::RawInput::default(), |ui| {
             for color in SWATCHES {
                 for selected in [false, true] {
@@ -1179,6 +1235,7 @@ mod tests {
     #[test]
     fn all_effects_and_layouts_render_at_minimum_window_size_without_sending_jobs() {
         let ctx = egui::Context::default();
+        theme::apply(&ctx);
         let Harness {
             mut app,
             jobs,
