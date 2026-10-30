@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
   <title>Pomni</title>
-  <desc>Ícone minimalista de uma arlequina: chapéu rosa, cabelo escuro com detalhe verde e rosto branco arredondado com óculos redondos ligados somente por uma ponte, sem hastes, olhos ou boca.</desc>
+  <desc>Ícone minimalista de uma arlequina: chapéu rosa, cabelo escuro com detalhe verde e rosto branco com queixo pontudo com óculos redondos ligados somente por uma ponte, sem hastes, olhos ou boca.</desc>
   <!-- Three broad cap facets, no fine facial or hair details. -->
   <path d="m128 77-47-45-54 34 13 52 13-38 27-15 31 28Z" fill="#ff087a"/>
   <path d="m128 77 47-45 54 34-13 52-13-38-27-15-31 28Z" fill="#ff087a"/>
@@ -10,7 +10,7 @@
   <path d="M75 113c0-29 22-48 53-48s53 19 53 48v59l-17 39-18-7h-36l-18 7-17-39Z" fill="#111218"/>
   <path d="m76 110 8-25 34-19-18 21-15 30v60l-10 24Z" fill="#5dff57"/>
   <path d="m180 111-8-26-20-12 16 29v75l12 24Z" fill="#ff087a"/>
-  <path d="M88 116v45a40 40 0 0 0 80 0v-45l-14-23-26 18-22-14Z" fill="#f7f8f5"/>
+  <path d="M88 116v39c0 30 17 48 40 61 23-13 40-31 40-61v-39l-14-23-26 18-22-14Z" fill="#f7f8f5"/>
   <!-- Circular lenses connected only by the bridge; no temples. -->
   <g stroke="#171920" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
     <circle cx="108" cy="143" r="17"/>

@@ -1,4 +1,4 @@
-# Pomni
+<h1><img src="assets/pomni.svg" width="48" height="48" alt=""> Pomni</h1>
 
 Controle de iluminação RGB para teclados no Linux, com interface gráfica nativa
 e uma opção de uso pelo terminal.
