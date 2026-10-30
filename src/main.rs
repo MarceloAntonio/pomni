@@ -1,9 +1,4 @@
-mod cli;
-mod descriptor;
-mod device;
-mod protocol;
-mod rgb;
-mod transport;
+use aula_cli::{cli, descriptor, device, identify, protocol, rgb};
 
 fn run() -> Result<(), String> {
     match cli::parse(std::env::args().skip(1).collect())? {
@@ -67,64 +62,15 @@ fn run() -> Result<(), String> {
             brightness,
             dry_run,
         } => {
-            let d = device::detect()?;
-            let h = protocol::open(&d)?;
-            let model = identify(&h)?;
-            let mut led = protocol::read_led(&h)?;
-            let old_led = led;
-            let mut palette = if rgb::needs_palette(&led, style.as_deref(), color) {
-                Some(protocol::read_palette(&h)?)
-            } else {
-                None
-            };
-            let old_palette = palette.clone();
-            rgb::apply(
-                &mut led,
-                palette.as_deref_mut(),
-                model,
-                style.as_deref(),
-                color,
-                brightness,
-            )?;
             println!(
-                "Teclado: {model}; modo: {}; estilo: {}",
-                d.mode(),
-                rgb::effect_name(led[10])
+                "{}",
+                aula_cli::apply_settings(color, style, brightness, dry_run)?
             );
-            if dry_run {
-                println!("Prévia pronta; nenhuma configuração gravada.");
-                return Ok(());
-            }
-            if palette != old_palette {
-                let p = palette.as_ref().ok_or("paleta não disponível")?;
-                protocol::set_palette(&h, p)?;
-                if protocol::read_palette(&h)? != *p {
-                    return Err(
-                        "paleta gravada, mas releitura divergente; estilo não gravado".into(),
-                    );
-                }
-            }
-            if palette != old_palette {
-                // Original palette -> LED flow waits 100 ms before applying LED.
-                std::thread::sleep(std::time::Duration::from_millis(100));
-            }
-            if led != old_led {
-                protocol::set_led(&h, &led)?;
-                if protocol::read_led(&h)? != led {
-                    return Err("configuração enviada, mas a releitura divergiu".into());
-                }
-            }
-            println!("Configuração confirmada por releitura.");
         }
     }
     Ok(())
 }
 
-fn identify(h: &transport::Hidraw) -> Result<&'static str, String> {
-    let psd = protocol::query_psd(h)?;
-    protocol::model(&psd)
-        .ok_or_else(|| format!("não reconheceu o teclado: identificação {psd:02x?}"))
-}
 fn battery_bar(percent: u8) -> String {
     let filled = (usize::from(percent) + 5) / 10;
     format!(

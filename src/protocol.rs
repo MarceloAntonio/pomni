@@ -620,6 +620,7 @@ mod tests {
             &mut led,
             Some(&mut image),
             "F75",
+            crate::rgb::LedLayout::F75Wireless,
             None,
             Some([0x4c, 0xb5, 0xe8]),
             None,

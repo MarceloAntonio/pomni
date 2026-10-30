@@ -31,9 +31,63 @@ pub fn effect_name(hw: u8) -> &'static str {
         .unwrap_or("custom/unknown")
 }
 
+/// The shipped driver's layout and the observed F75 wireless firmware differ.
+/// See docs/brightness-evidence.md for the physical wheel captures.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LedLayout {
+    Driver,
+    F75Wireless,
+}
+
+impl LedLayout {
+    pub fn for_connection(model: &str, wireless: bool) -> Self {
+        if model == "F75" && wireless {
+            Self::F75Wireless
+        } else {
+            Self::Driver
+        }
+    }
+
+    fn brightness(self, led: &[u8; 128], effect_index: usize) -> u8 {
+        match self {
+            Self::Driver => led[0x3b + 2 * effect_index] >> 4,
+            Self::F75Wireless => led[0x3a + 2 * effect_index],
+        }
+    }
+
+    fn set_brightness(self, led: &mut [u8; 128], effect_index: usize, level: u8) {
+        match self {
+            Self::Driver => {
+                let packed = &mut led[0x3b + 2 * effect_index];
+                *packed = (level << 4) | (*packed & 0x0f);
+            }
+            Self::F75Wireless => led[0x3a + 2 * effect_index] = level,
+        }
+    }
+}
+
+fn max_brightness(model: &str) -> Option<u8> {
+    match model {
+        "F75" => Some(9),
+        "F87" | "F99" => Some(4),
+        _ => None,
+    }
+}
+
+/// Read the active hardware brightness using the same layout as the writer.
+pub fn brightness_percent(led: &[u8; 128], model: &str, layout: LedLayout) -> Option<u8> {
+    if led[9] != 0 || led[10] == 0 || led[126..] != [0x5a, 0xa5] {
+        return None;
+    }
+    let i = EFFECTS.iter().position(|(_, hw, _)| *hw == led[10])?;
+    let max = max_brightness(model)?;
+    let level = layout.brightness(led, i);
+    (level <= max).then(|| ((u16::from(level) * 100 + u16::from(max) / 2) / u16::from(max)) as u8)
+}
+
 /// The last LedOpt column in the shipped model files enables color selection.
 /// Hardware IDs are the FIRST LedOpt column, not the second effect/type column.
-fn color_capable(hw: u8) -> bool {
+pub fn color_capable(hw: u8) -> bool {
     matches!(hw, 1 | 2 | 4..=14 | 18)
 }
 
@@ -59,16 +113,14 @@ pub fn apply(
     led: &mut [u8; 128],
     palette: Option<&mut [u8]>,
     model: &str,
+    layout: LedLayout,
     style: Option<&str>,
     color: Option<[u8; 3]>,
     brightness: Option<crate::cli::Brightness>,
 ) -> Result<(), String> {
     use crate::cli::Brightness;
-    let max_level: u8 = match model {
-        "F75" => 9,
-        "F87" | "F99" => 4,
-        _ => return Err(format!("modelo desconhecido para RGB: {model}")),
-    };
+    let max_level =
+        max_brightness(model).ok_or_else(|| format!("modelo desconhecido para RGB: {model}"))?;
     if led[126..128] != [0x5a, 0xa5] {
         return Err("bloco LED sem marcador 5a a5; configuração não alterada".into());
     }
@@ -102,7 +154,7 @@ pub fn apply(
             Some(((u16::from(percent) * u16::from(max_level) + 50) / 100) as u8)
         }
         Some(Brightness::Up(points) | Brightness::Down(points)) if points <= 100 => {
-            let current = led[packed] >> 4;
+            let current = layout.brightness(led, i);
             if current > max_level {
                 return Err("nível de brilho atual inválido; use --brightness 0..100".into());
             }
@@ -148,7 +200,7 @@ pub fn apply(
         led[10] = hw;
     }
     if let Some(value) = level {
-        led[packed] = (value << 4) | (led[packed] & 0x0f);
+        layout.set_brightness(led, i, value);
     }
     if carry_color {
         let p = palette.expect("palette validated above");
@@ -171,6 +223,99 @@ pub fn apply(
 mod tests {
     use super::*;
     use crate::cli::Brightness;
+
+    #[test]
+    fn f75_wireless_brightness_matches_physical_wheel_capture() {
+        let before = *include_bytes!("../tests/fixtures/f75-wireless-neon-before.bin");
+        let after = *include_bytes!("../tests/fixtures/f75-wireless-neon-after.bin");
+        let layout = LedLayout::for_connection("F75", true);
+        assert_eq!(before[10], 11); // neon, unchanged by the wheel
+        assert_eq!(brightness_percent(&before, "F75", layout), Some(67));
+        assert_eq!(brightness_percent(&after, "F75", layout), Some(22));
+        for request in [Brightness::Absolute(22), Brightness::Down(40)] {
+            let mut led = before;
+            apply(&mut led, None, "F75", layout, None, None, Some(request)).unwrap();
+            // Compare the entire independently captured block, including the
+            // adjacent byte the old implementation incorrectly overwrote.
+            assert_eq!(led, after);
+        }
+        let mut restored = after;
+        apply(
+            &mut restored,
+            None,
+            "F75",
+            layout,
+            None,
+            None,
+            Some(Brightness::Up(40)),
+        )
+        .unwrap();
+        assert_eq!(restored, before);
+    }
+
+    #[test]
+    fn f75_wireless_limits_and_effect_changes_preserve_neighboring_fields() {
+        let captured = *include_bytes!("../tests/fixtures/f75-wireless-neon-before.bin");
+        for (i, (name, hw, _)) in EFFECTS
+            .iter()
+            .enumerate()
+            .filter(|(_, (_, hw, _))| *hw != 0)
+        {
+            let mut led = captured;
+            // Palette transfer is deliberately avoided here; test brightness
+            // and effect selection together without assuming any palette data.
+            led[10] = 3; // rainbow has no transferable single-color palette
+            apply(
+                &mut led,
+                None,
+                "F75",
+                LedLayout::F75Wireless,
+                Some(name),
+                None,
+                Some(Brightness::Absolute(100)),
+            )
+            .unwrap();
+            assert_eq!(led[10], *hw);
+            assert_eq!(
+                brightness_percent(&led, "F75", LedLayout::F75Wireless),
+                Some(100)
+            );
+            for offset in 0..128 {
+                if offset != 10 && offset != 0x3a + 2 * i {
+                    assert_eq!(
+                        led[offset], captured[offset],
+                        "effect {name}, byte {offset}"
+                    );
+                }
+            }
+            apply(
+                &mut led,
+                None,
+                "F75",
+                LedLayout::F75Wireless,
+                None,
+                None,
+                Some(Brightness::Up(10)),
+            )
+            .unwrap();
+            assert_eq!(led[0x3a + 2 * i], 9);
+            apply(
+                &mut led,
+                None,
+                "F75",
+                LedLayout::F75Wireless,
+                None,
+                None,
+                Some(Brightness::Down(100)),
+            )
+            .unwrap();
+            assert_eq!(led[0x3a + 2 * i], 0);
+        }
+        assert_eq!(LedLayout::for_connection("F75", false), LedLayout::Driver);
+        for model in ["F87", "F99"] {
+            assert_eq!(LedLayout::for_connection(model, true), LedLayout::Driver);
+        }
+    }
 
     #[test]
     fn hardware_ids_match_first_ledopt_column_not_effect_type() {
@@ -199,7 +344,16 @@ mod tests {
         assert!(!needs_palette(&led, Some("waterfall"), None));
         assert!(needs_palette(&led, Some("breathing"), None));
         let previous = led;
-        apply(&mut led, None, "F75", Some("waterfall"), None, None).unwrap();
+        apply(
+            &mut led,
+            None,
+            "F75",
+            LedLayout::Driver,
+            Some("waterfall"),
+            None,
+            None,
+        )
+        .unwrap();
         assert_eq!(led[10], 16);
         for i in 0..128 {
             if i != 9 && i != 10 {
@@ -218,6 +372,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F75",
+            LedLayout::Driver,
             None,
             Some([0x4c, 0xb5, 0xe8]),
             None,
@@ -254,6 +409,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F75",
+            LedLayout::Driver,
             None,
             Some([0x12, 0x34, 0xab]),
             None,
@@ -282,6 +438,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F75",
+            LedLayout::Driver,
             Some("waterfall"),
             None,
             None,
@@ -307,6 +464,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F75",
+            LedLayout::Driver,
             Some("breathing"),
             None,
             None,
@@ -328,6 +486,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F75",
+            LedLayout::Driver,
             Some("static"),
             None,
             None,
@@ -349,6 +508,7 @@ mod tests {
                 &mut led,
                 None,
                 model,
+                LedLayout::Driver,
                 None,
                 None,
                 Some(Brightness::Absolute(percent)),
@@ -362,18 +522,29 @@ mod tests {
             &mut led,
             None,
             "F87",
+            LedLayout::Driver,
             None,
             None,
             Some(Brightness::Down(10)),
         )
         .unwrap();
         assert_eq!(led[59] >> 4, 3);
-        apply(&mut led, None, "F87", None, None, Some(Brightness::Up(100))).unwrap();
+        apply(
+            &mut led,
+            None,
+            "F87",
+            LedLayout::Driver,
+            None,
+            None,
+            Some(Brightness::Up(100)),
+        )
+        .unwrap();
         assert_eq!(led[59] >> 4, 4);
         apply(
             &mut led,
             None,
             "F87",
+            LedLayout::Driver,
             None,
             None,
             Some(Brightness::Down(100)),
@@ -390,6 +561,7 @@ mod tests {
             &mut led,
             Some(&mut palette),
             "F87",
+            LedLayout::Driver,
             Some("breathing"),
             Some([1, 2, 3]),
             Some(Brightness::Absolute(100)),
@@ -415,6 +587,7 @@ mod tests {
                     &mut led,
                     Some(&mut palette),
                     "F75",
+                    LedLayout::Driver,
                     Some(style),
                     Some([1, 2, 3]),
                     None
@@ -432,6 +605,7 @@ mod tests {
                 &mut led,
                 Some(&mut bad_palette),
                 "F75",
+                LedLayout::Driver,
                 None,
                 Some([1, 2, 3]),
                 None
@@ -442,7 +616,18 @@ mod tests {
         assert_eq!(bad_palette, [0; 512]);
         led[127] = 0;
         let before = led;
-        assert!(apply(&mut led, None, "F75", Some("static"), None, None).is_err());
+        assert!(
+            apply(
+                &mut led,
+                None,
+                "F75",
+                LedLayout::Driver,
+                Some("static"),
+                None,
+                None
+            )
+            .is_err()
+        );
         assert_eq!(led, before);
     }
 }

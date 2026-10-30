@@ -9,8 +9,14 @@ Vtable CDev3632 em `0x62220c`: slot `0x3c` aponta para ApplySetting `0x495190`, 
 
 ## Bloco LED de 128 bytes
 
+**Correção por evidência física:** no F75 wireless observado em 2026-10-30,
+o brilho está no byte `0x3a+2*i`, diferente do conversor genérico abaixo.
+CLI e GUI usam o layout observado nesse modelo/transporte. Veja
+[brightness-evidence.md](brightness-evidence.md) para as capturas e os limites.
+
+
 * `[9]` seleciona estado de iluminação personalizada: a rotina de efeito `0x4950e0` força zero antes da gravação.
-* `[10]` é o ID hardware do efeito, segunda coluna de `LedOptN` (primeira coluna é índice/texto UI). Escrita em `0x49bd0a` e `0x495153`.
+* `[10]` é o ID hardware do efeito, primeira coluna de `LedOptN` (segunda coluna é tipo/efeito). Escrita em `0x49bd0a` e `0x495153`.
 * Para índice UI `i = N-1` de `LedOptN`, `[0x3a+2*i]` armazena `SpeedHW[speed_UI]`.
 * `[0x3b+2*i] = (LightHW[brightness_UI] << 4) | (random_enabled ? RandomVal : 0)`.
 * Evidência do laço: `0x49bd40..0x49bd70`, início destino `buf+0x3b`, incremento2,19 elementos. Fontes SpeedHW/LightHW são tabelas modelo+`0x2e10/0x2df0`, respectivamente.

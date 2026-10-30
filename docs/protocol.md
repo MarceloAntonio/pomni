@@ -39,7 +39,10 @@ validação experimental da compatibilidade de revisões futuras de firmware.
 
 RGB128: byte 9 seleciona modo normal (zero); byte 10 contém o ID de efeito.
 Para índice de interface i, velocidade fica em `58+2*i`; brilho, no nibble alto
-de `59+2*i`; aleatório, no nibble baixo. A paleta contém sete triplas RGB por
+de `59+2*i`; aleatório, no nibble baixo. Esse é o layout do conversor genérico
+do driver. No F75 wireless capturado, o brilho real é o byte inteiro `58+2*i`;
+esse caminho usa um layout específico, preservando o byte adjacente. Veja
+`brightness-evidence.md`. A paleta contém sete triplas RGB por
 ID de efeito hardware. Para static (ID1), bytes 21–41. Os modelos analisados
 declaram `CRC=1`: o software usa blocos com marcador final `5a a5`; isso não é
 uma implementação de CRC matemático no CLI. Os marcadores existentes são
