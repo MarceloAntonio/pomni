@@ -1,10 +1,12 @@
 //! Native frontend. All device access runs on one worker, serialized with writes.
-#[path = "aula-gui/palettes.rs"]
+#[path = "pomni-gui/palettes.rs"]
 mod palettes;
+#[path = "pomni-gui/preferences.rs"]
+mod preferences;
 use palettes::PaletteBook;
 
-use aula_cli::{cli::Brightness, device, identify, protocol, rgb};
 use eframe::egui::{self, Color32, RichText, Sense, Stroke, Vec2};
+use pomni::{cli::Brightness, device, identify, protocol, rgb};
 use std::{
     sync::mpsc::{self, Receiver, Sender},
     time::Duration,
@@ -111,7 +113,7 @@ fn worker(ctx: egui::Context) -> (Sender<Job>, Receiver<Result<Outcome, String>>
                     effect,
                     color,
                     brightness,
-                } => aula_cli::apply_settings(
+                } => pomni::apply_settings(
                     color,
                     Some(rgb::EFFECTS[effect].0.into()),
                     brightness.map(Brightness::Absolute),
@@ -513,9 +515,9 @@ impl App {
     fn header(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ui.label(RichText::new("AULA").size(32.0).strong());
+                ui.label(RichText::new("POMNI").size(32.0).strong());
                 ui.label(
-                    RichText::new("F SERIES  /  RGB CONTROL")
+                    RichText::new("CONTROLE RGB  /  LINUX")
                         .size(11.0)
                         .color(MUTED),
                 );
@@ -1007,12 +1009,19 @@ impl eframe::App for App {
 }
 
 fn main() -> eframe::Result {
+    if let (Some(old), Some(new)) = (
+        eframe::storage_dir("aula-gui"),
+        eframe::storage_dir("pomni"),
+    ) && let Err(error) = preferences::migrate(&old.join("app.ron"), &new.join("app.ron"))
+    {
+        eprintln!("Não foi possível importar as preferências anteriores: {error}");
+    }
     eframe::run_native(
-        "AULA RGB",
+        "Pomni",
         eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
-                .with_title("AULA RGB")
-                .with_app_id("aula-gui")
+                .with_title("Pomni")
+                .with_app_id("pomni")
                 .with_inner_size([1280.0, 820.0])
                 .with_min_inner_size([1100.0, 760.0]),
             ..Default::default()

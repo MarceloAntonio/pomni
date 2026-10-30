@@ -1,11 +1,13 @@
 [package]
-name = "aula-cli"
-version = "0.1.0"
+name = "pomni"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.88"
-description = "CLI Linux para teclados AULA F Series, baseado em engenharia reversa"
+description = "Controle independente de iluminação RGB para teclados compatíveis no Linux"
+license = "MIT"
+repository = "https://github.com/MarceloAntonio/pomni"
 
-default-run = "aula-cli"
+default-run = "pomni"
 
 [dependencies]
 eframe = { version = "0.36", optional = true, default-features = false, features = ["glow", "wayland", "x11", "default_fonts", "persistence"] }
@@ -14,8 +16,8 @@ eframe = { version = "0.36", optional = true, default-features = false, features
 gui = ["dep:eframe"]
 
 [[bin]]
-name = "aula-gui"
-path = "src/bin/aula-gui.rs"
+name = "pomni-gui"
+path = "src/bin/pomni-gui.rs"
 required-features = ["gui"]
 
 [profile.release]

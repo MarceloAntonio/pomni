@@ -1,4 +1,4 @@
-use aula_cli::{cli, descriptor, device, identify, protocol, rgb};
+use pomni::{cli, descriptor, device, identify, protocol, rgb};
 
 fn run() -> Result<(), String> {
     match cli::parse(std::env::args().skip(1).collect())? {
@@ -64,7 +64,7 @@ fn run() -> Result<(), String> {
         } => {
             println!(
                 "{}",
-                aula_cli::apply_settings(color, style, brightness, dry_run)?
+                pomni::apply_settings(color, style, brightness, dry_run)?
             );
         }
     }

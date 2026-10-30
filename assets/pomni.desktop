@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Pomni
+Comment=Controle independente de iluminação RGB
+Exec=pomni-gui
+Icon=pomni
+Terminal=false
+Categories=Settings;HardwareSettings;
+StartupNotify=true
+StartupWMClass=pomni

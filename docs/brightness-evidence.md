@@ -31,7 +31,7 @@ ele grava SpeedHW em `0x3a+2*i` e LightHW no nibble alto de `0x3b+2*i`.
 Isso é observação estática do programa distribuído, não validação do formato
 usado pela revisão de firmware do teclado atual.
 
-Fonte da desmontagem preservada: `/home/celo/aula-re/evidence/oem-disassembly.txt`.
+Fonte da desmontagem preservada: `evidence/oem-disassembly.txt` (artefato de pesquisa mantido fora deste repositório).
 A análise REA anterior da família 3632 está preservada sob Evidence
 `ev_92b6296874220a4333f4d97d66f856f5088349428c6f2cef1e55d6a8724c5fee`;
 a comparação física e a desmontagem citada aqui não recebem um novo ID REA.
@@ -55,7 +55,7 @@ demais campos. Testes simulados não substituem a confirmação visual do usuár
 ## Validação da escrita corrigida
 
 Depois de compilar CLI e GUI, executamos no teclado real
-`./target/release/aula-cli set --brightness 67`. O CLI informou
+`./target/release/pomni set --brightness 67`. O CLI informou
 `Brilho: 22% → 67%` e confirmou a configuração por releitura.
 O usuário confirmou visualmente: “Sim, aumentou”. O efeito neon foi mantido.
 Essa confirmação valida a escrita no F75 wireless observado; não amplia a

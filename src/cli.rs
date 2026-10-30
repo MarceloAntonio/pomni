@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-pub const HELP: &str = "aula-cli — AULA F Series no terminal (Linux)\n\nUso:\n  aula-cli info [--battery] [--mode]\n  aula-cli set [--color RRGGBB] [--style NOME] [--brightness VALOR] [--dry-run]\n  aula-cli set --brightness-up\n  aula-cli set --brightness-down\n  aula-cli effects\n  aula-cli list [--all]\n  aula-cli models\n\nO teclado é detectado automaticamente. Cor e estilo omitidos são preservados.\nBrilho: percentual 0..100 ou alteração +10/-10; up/down alteram 10 pontos.\nUse --color ff0000 ou --color '#ff0000'; sem aspas, # inicia comentário no shell.\n--dry-run consulta o estado e mostra a alteração sem gravar configurações.\n";
+pub const HELP: &str = "Pomni — controle RGB independente para Linux\n\nUso:\n  pomni info [--battery] [--mode]\n  pomni set [--color RRGGBB] [--style NOME] [--brightness VALOR] [--dry-run]\n  pomni set --brightness-up\n  pomni set --brightness-down\n  pomni effects\n  pomni list [--all]\n  pomni models\n\nO teclado é detectado automaticamente. Cor e estilo omitidos são preservados.\nBrilho: percentual 0..100 ou alteração +10/-10; up/down alteram 10 pontos.\nUse --color ff0000 ou --color '#ff0000'; sem aspas, # inicia comentário no shell.\n--dry-run consulta o estado e mostra a alteração sem gravar configurações.\n";
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Brightness {

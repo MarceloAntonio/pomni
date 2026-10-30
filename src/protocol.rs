@@ -1,5 +1,5 @@
 //! Descriptor-selected AULA wired feature and wireless report19 protocols.
-//! See ../aula-re/wireless-notes.md for binary addresses and evidence limits.
+//! See docs/wireless-evidence.md for protocol evidence and limitations.
 use crate::transport::Hidraw;
 use std::time::Instant;
 use std::{io, time::Duration};
@@ -77,15 +77,20 @@ impl From<&str> for ReceiveError {
     }
 }
 
+fn tracing_enabled() -> bool {
+    std::env::var("POMNI_TRACE").as_deref() == Ok("1")
+        || std::env::var("AULA_TRACE").as_deref() == Ok("1")
+}
+
 fn trace(label: &str, bytes: &[u8]) {
-    if std::env::var("AULA_TRACE").as_deref() == Ok("1") && bytes.first() == Some(&REPORT) {
-        eprintln!("AULA {label}: {:02x?}", bytes);
+    if tracing_enabled() && bytes.first() == Some(&REPORT) {
+        eprintln!("POMNI {label}: {:02x?}", bytes);
     }
 }
 
 fn stage(label: &str) {
-    if std::env::var("AULA_TRACE").as_deref() == Ok("1") {
-        eprintln!("AULA etapa: {label}");
+    if tracing_enabled() {
+        eprintln!("POMNI etapa: {label}");
     }
 }
 
